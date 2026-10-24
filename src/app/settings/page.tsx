@@ -1,66 +1,55 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Check,
   Save,
-  Database,
   Trash2,
   RotateCcw,
-  User,
   Shield,
-  Sliders,
-  Bell,
-  HelpCircle,
 } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import type { PlatformSettings } from '@/types';
 import {
-  getStoredSettings,
   saveStoredSettings,
-  getStoredRules,
-  getStoredReviews,
   clearAllStoredReviews,
   resetRulesToDefault,
-  DEFAULT_SETTINGS,
+  usePlatformSettings,
+  useBrandRules,
+  useStoredReviews,
 } from '@/lib/storage';
 
-export default function SettingsPage() {
-  const { showToast, showRoadmapNotice } = useToast();
-  const [mounted, setMounted] = useState(false);
+interface SettingsFormProps {
+  initialSettings: PlatformSettings;
+  rulesCount: number;
+  reviewsCount: number;
+  onResetRules: () => void;
+  onClearReviews: () => void;
+}
+
+function SettingsForm({
+  initialSettings,
+  rulesCount,
+  reviewsCount,
+  onResetRules,
+  onClearReviews,
+}: SettingsFormProps) {
+  const { showToast } = useToast();
 
   // Form states
-  const [orgName, setOrgName] = useState('Acme Global Brands');
-  const [minComplianceScore, setMinComplianceScore] = useState(85);
-  const [strictMode, setStrictMode] = useState(true);
-  const [autoBlockCritical, setAutoBlockCritical] = useState(true);
-  const [reviewerIdentity, setReviewerIdentity] = useState('Demo Reviewer (Brand Lead)');
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [slackWebhook, setSlackWebhook] = useState('');
-
-  // Storage metrics
-  const [rulesCount, setRulesCount] = useState(0);
-  const [reviewsCount, setReviewsCount] = useState(0);
-
-  useEffect(() => {
-    setMounted(true);
-    const settings = getStoredSettings();
-    setOrgName(settings.orgName);
-    setMinComplianceScore(settings.minComplianceScore);
-    setStrictMode(settings.strictMode);
-    setAutoBlockCritical(settings.autoBlockCritical);
-    setReviewerIdentity(settings.reviewerIdentity);
-    setEmailAlerts(settings.emailAlerts);
-    setSlackWebhook(settings.slackWebhook || '');
-
-    setRulesCount(getStoredRules().length);
-    setReviewsCount(getStoredReviews().length);
-  }, []);
+  const [orgName, setOrgName] = useState(initialSettings.orgName);
+  const [minComplianceScore, setMinComplianceScore] = useState(initialSettings.minComplianceScore);
+  const [strictMode, setStrictMode] = useState(initialSettings.strictMode);
+  const [autoBlockCritical, setAutoBlockCritical] = useState(initialSettings.autoBlockCritical);
+  const [reviewerIdentity, setReviewerIdentity] = useState(initialSettings.reviewerIdentity);
+  const [emailAlerts, setEmailAlerts] = useState(initialSettings.emailAlerts);
+  const [slackWebhook, setSlackWebhook] = useState(initialSettings.slackWebhook || '');
 
   const handleSaveSettings = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const updated = saveStoredSettings({
+    saveStoredSettings({
       orgName,
       minComplianceScore,
       strictMode,
@@ -71,26 +60,6 @@ export default function SettingsPage() {
     });
     showToast('Settings Saved', 'Platform configuration successfully persisted in browser storage.', 'success');
   };
-
-  const handleClearReviews = () => {
-    if (window.confirm('Delete all saved reviews in local storage? This action cannot be undone.')) {
-      clearAllStoredReviews();
-      setReviewsCount(0);
-      showToast('Reviews Cleared', 'Stored review records have been wiped clean.', 'info');
-    }
-  };
-
-  const handleResetRules = () => {
-    if (window.confirm('Restore Brand Vault rules to the original demo rules profile?')) {
-      const reset = resetRulesToDefault();
-      setRulesCount(reset.length);
-      showToast('Rules Reset', 'Brand Vault restored to standard demo rules.', 'success');
-    }
-  };
-
-  if (!mounted) {
-    return <div className="p-8 text-center text-slate-400">Loading Platform Settings...</div>;
-  }
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -212,6 +181,39 @@ export default function SettingsPage() {
                   </span>
                 </div>
               </label>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={emailAlerts}
+                  onChange={e => setEmailAlerts(e.target.checked)}
+                  className="rounded border-slate-700 text-blue-600 focus:ring-0 mt-0.5"
+                />
+                <div>
+                  <span className="text-xs font-semibold text-slate-200 block">
+                    Email Digest Notifications
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Send daily summary of pending approvals and rejected publications to the brand governance team.
+                  </span>
+                </div>
+              </label>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  Optional Audit Webhook URL
+                </label>
+                <input
+                  type="url"
+                  value={slackWebhook}
+                  onChange={e => setSlackWebhook(e.target.value)}
+                  placeholder="https://hooks.slack.com/services/..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 font-mono text-xs"
+                />
+                <span className="text-[11px] text-slate-500 mt-1 block">
+                  Optional webhook endpoint for real-time compliance alert events.
+                </span>
+              </div>
             </div>
           </div>
         </Card>
@@ -261,7 +263,7 @@ export default function SettingsPage() {
                 size="sm"
                 type="button"
                 icon={<RotateCcw className="w-3.5 h-3.5" />}
-                onClick={handleResetRules}
+                onClick={onResetRules}
               >
                 Reset Brand Vault to Defaults
               </Button>
@@ -271,7 +273,7 @@ export default function SettingsPage() {
                 size="sm"
                 type="button"
                 icon={<Trash2 className="w-3.5 h-3.5" />}
-                onClick={handleClearReviews}
+                onClick={onClearReviews}
                 disabled={reviewsCount === 0}
               >
                 Clear All Saved Reviews
@@ -287,5 +289,37 @@ export default function SettingsPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  const { showToast } = useToast();
+  const settings = usePlatformSettings();
+  const rules = useBrandRules();
+  const reviews = useStoredReviews();
+
+  const handleClearReviews = () => {
+    if (window.confirm('Delete all saved reviews in local storage? This action cannot be undone.')) {
+      clearAllStoredReviews();
+      showToast('Reviews Cleared', 'Stored review records have been wiped clean.', 'info');
+    }
+  };
+
+  const handleResetRules = () => {
+    if (window.confirm('Restore Brand Vault rules to the original demo rules profile?')) {
+      resetRulesToDefault();
+      showToast('Rules Reset', 'Brand Vault restored to standard demo rules.', 'success');
+    }
+  };
+
+  return (
+    <SettingsForm
+      key={settings.orgName + '-' + settings.minComplianceScore + '-' + settings.reviewerIdentity}
+      initialSettings={settings}
+      rulesCount={rules.length}
+      reviewsCount={reviews.length}
+      onResetRules={handleResetRules}
+      onClearReviews={handleClearReviews}
+    />
   );
 }

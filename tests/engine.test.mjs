@@ -170,4 +170,43 @@ describe('BrandSentry Review Engine & Scoring Tests', () => {
     assert.equal(metrics.pendingApprovals, 1);
     assert.equal(metrics.complianceRate, 85); // (100 + 70) / 2 = 85
   });
+
+  it('9. Clamps compliance score to 0 when deductions exceed 100 points', () => {
+    const findings = [
+      { id: '1', ruleId: 'R1', ruleName: 'Critical 1', category: 'OTHER', severity: 'CRITICAL', matchedText: 'a', evidence: '', explanation: '' },
+      { id: '2', ruleId: 'R2', ruleName: 'Critical 2', category: 'OTHER', severity: 'CRITICAL', matchedText: 'b', evidence: '', explanation: '' },
+      { id: '3', ruleId: 'R3', ruleName: 'Critical 3', category: 'OTHER', severity: 'CRITICAL', matchedText: 'c', evidence: '', explanation: '' },
+      { id: '4', ruleId: 'R4', ruleName: 'Critical 4', category: 'OTHER', severity: 'CRITICAL', matchedText: 'd', evidence: '', explanation: '' },
+      { id: '5', ruleId: 'R5', ruleName: 'Critical 5', category: 'OTHER', severity: 'CRITICAL', matchedText: 'e', evidence: '', explanation: '' },
+    ];
+    // 5 * 25 = 125 deduction
+    const { score, deductions } = calculateComplianceScore(findings);
+    assert.equal(deductions, 125);
+    assert.equal(score, 0);
+    assert.equal(deriveReviewStatus(score, findings), 'FLAGGED');
+  });
+
+  it('10. Extracts exact sentence context in multi-sentence copy', () => {
+    const paragraph =
+      'First intro sentence here. Competitors are clueless about our innovative security platform. Final concluding sentence follows.';
+    const result = runContentReview(paragraph, INITIAL_DEMO_RULES, 'BLOG');
+    const finding = result.findings.find(f => f.ruleId === 'DEMO-RULE-003');
+    assert.ok(finding);
+    assert.equal(finding.evidence, 'Competitors are clueless about our innovative security platform.');
+  });
+
+  it('11. Detects multiple violations in combined copy and accounts for each in score', () => {
+    const copy =
+      'Brand Sentry offers a 100% guaranteed zero downtime architecture. Competitors are clueless in this space.';
+    const result = runContentReview(copy, INITIAL_DEMO_RULES, 'LINKEDIN');
+
+    // Should detect 4 distinct violations:
+    // 1. DEMO-RULE-002: "Brand Sentry" (WARNING: -10)
+    // 2. DEMO-RULE-001: "100% guaranteed" (CRITICAL: -25)
+    // 3. DEMO-RULE-001: "zero downtime" (CRITICAL: -25)
+    // 4. DEMO-RULE-003: "competitors are clueless" (WARNING: -10)
+    assert.equal(result.findings.length, 4);
+    assert.equal(result.complianceScore, 30); // 100 - (25 + 25 + 10 + 10) = 30
+    assert.equal(result.status, 'FLAGGED');
+  });
 });

@@ -213,7 +213,7 @@ export const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews, isSampleD
                           <Badge severity={issue.severity} size="sm" />
                         </div>
                       </div>
-                      <p className="text-xs text-slate-300">{issue.explanation || issue.message}</p>
+                      <p className="text-xs text-slate-300">{issue.explanation}</p>
                       {issue.evidence && (
                         <p className="text-[11px] text-slate-400 italic">
                           Evidence: &ldquo;{issue.evidence}&rdquo;

@@ -1,22 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   History,
   Search,
   Download,
   ExternalLink,
-  ShieldCheck,
-  AlertTriangle,
-  Clock,
   Trash2,
-  CheckCircle2,
-  XCircle,
-  RotateCcw,
-  Sparkles,
-  Database,
-  ArrowRight,
   Info,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -24,49 +15,34 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ILLUSTRATIVE_REVIEWS } from '@/lib/mock-data';
-import { ApprovalStatus, PublishingChannel, ReviewStatus, StoredReview } from '@/types';
+import type { ApprovalStatus, StoredReview } from '@/types';
 import {
-  getStoredReviews,
+  useStoredReviews,
+  usePlatformSettings,
   updateReviewApproval,
   deleteReview,
-  getStoredSettings,
 } from '@/lib/storage';
 import { useToast } from '@/components/ui/Toast';
 
 export default function ReviewHistoryPage() {
   const { showToast, showRoadmapNotice } = useToast();
-  const [mounted, setMounted] = useState(false);
-  const [storedReviews, setStoredReviews] = useState<StoredReview[]>([]);
+  const storedReviews = useStoredReviews();
+  const settings = usePlatformSettings();
+  const reviewerName = settings.reviewerIdentity || 'Demo Reviewer (Brand Lead)';
+
   const [showSampleData, setShowSampleData] = useState(false); // Default to REAL records
   const [searchQuery, setSearchQuery] = useState('');
   const [channelFilter, setChannelFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [approvalFilter, setApprovalFilter] = useState<string>('ALL');
-  const [selectedReview, setSelectedReview] = useState<StoredReview | null>(null);
-  const [reviewerName, setReviewerName] = useState('Demo Reviewer (Brand Lead)');
-
-  useEffect(() => {
-    setMounted(true);
-    const loaded = getStoredReviews();
-    setStoredReviews(loaded);
-
-    // If user has zero reviews, they can toggle sample data if desired
-    const settings = getStoredSettings();
-    if (settings.reviewerIdentity) {
-      setReviewerName(settings.reviewerIdentity);
-    }
-
-    const handleStorageUpdate = () => {
-      setStoredReviews(getStoredReviews());
-    };
-    window.addEventListener('brandsentry:storage-updated', handleStorageUpdate);
-    return () => window.removeEventListener('brandsentry:storage-updated', handleStorageUpdate);
-  }, []);
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
 
   // Determine active dataset: real stored reviews or explicitly labeled sample data
   const baseReviews: StoredReview[] = showSampleData
     ? (ILLUSTRATIVE_REVIEWS as unknown as StoredReview[])
     : storedReviews;
+
+  const selectedReview = baseReviews.find(r => r.id === selectedReviewId) || null;
 
   const filteredReviews = baseReviews.filter(item => {
     const matchesSearch =
@@ -87,13 +63,7 @@ export default function ReviewHistoryPage() {
       return;
     }
 
-    const updated = updateReviewApproval(id, newStatus, undefined, reviewerName);
-    setStoredReviews(updated);
-    if (selectedReview && selectedReview.id === id) {
-      const refreshed = updated.find(r => r.id === id) || null;
-      setSelectedReview(refreshed);
-    }
-
+    updateReviewApproval(id, newStatus, undefined, reviewerName);
     showToast('Approval Status Updated', `Review ${id} decision marked as ${newStatus}.`, 'success');
   };
 
@@ -103,17 +73,12 @@ export default function ReviewHistoryPage() {
       return;
     }
 
-    const updated = deleteReview(id);
-    setStoredReviews(updated);
-    if (selectedReview?.id === id) {
-      setSelectedReview(null);
+    deleteReview(id);
+    if (selectedReviewId === id) {
+      setSelectedReviewId(null);
     }
     showToast('Review Removed', `Record ${id} was deleted from storage.`, 'info');
   };
-
-  if (!mounted) {
-    return <div className="p-8 text-center text-slate-400">Loading Review History...</div>;
-  }
 
   return (
     <div className="space-y-6">
@@ -270,7 +235,7 @@ export default function ReviewHistoryPage() {
                 {filteredReviews.map(item => (
                   <tr
                     key={item.id}
-                    onClick={() => setSelectedReview(item)}
+                    onClick={() => setSelectedReviewId(item.id)}
                     className="hover:bg-slate-800/40 transition-colors cursor-pointer group"
                   >
                     <td className="py-3.5 px-4 max-w-sm">
@@ -319,7 +284,7 @@ export default function ReviewHistoryPage() {
                       <button
                         onClick={e => {
                           e.stopPropagation();
-                          setSelectedReview(item);
+                          setSelectedReviewId(item.id);
                         }}
                         className="text-xs text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1"
                       >
@@ -339,7 +304,7 @@ export default function ReviewHistoryPage() {
       {selectedReview && (
         <div
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setSelectedReview(null)}
+          onClick={() => setSelectedReviewId(null)}
         >
           <div
             className="bg-[#0f172a] border border-slate-700/80 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto"
@@ -356,7 +321,7 @@ export default function ReviewHistoryPage() {
                 </p>
               </div>
               <button
-                onClick={() => setSelectedReview(null)}
+                onClick={() => setSelectedReviewId(null)}
                 className="p-1 rounded text-slate-400 hover:text-white"
               >
                 &times;
@@ -476,7 +441,7 @@ export default function ReviewHistoryPage() {
                 </button>
               )}
               <div className="ml-auto">
-                <Button variant="outline" size="sm" onClick={() => setSelectedReview(null)}>
+                <Button variant="outline" size="sm" onClick={() => setSelectedReviewId(null)}>
                   Close
                 </Button>
               </div>

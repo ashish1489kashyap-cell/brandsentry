@@ -1,30 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   FileSearch,
   Sparkles,
   ShieldCheck,
   RotateCcw,
-  Upload,
-  CheckCircle2,
-  AlertTriangle,
-  Info,
   Save,
   Check,
   XCircle,
   HelpCircle,
   ArrowRight,
   RefreshCw,
-  ExternalLink,
 } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import {
+import type {
   ApprovalStatus,
-  BrandRule,
   PublishingChannel,
   ReviewFinding,
   StoredReview,
@@ -35,17 +29,17 @@ import {
   applyTargetedCorrection,
 } from '@/lib/engine/reviewer';
 import {
-  getStoredRules,
-  getStoredSettings,
+  useBrandRules,
+  usePlatformSettings,
   saveReview,
 } from '@/lib/storage';
 import { useToast } from '@/components/ui/Toast';
 
 export default function ContentReviewPage() {
-  const { showToast, showRoadmapNotice } = useToast();
-
-  const [rules, setRules] = useState<BrandRule[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const { showToast } = useToast();
+  const rules = useBrandRules();
+  const settings = usePlatformSettings();
+  const reviewerName = settings.reviewerIdentity || 'Demo Reviewer (Brand Lead)';
 
   // Draft form
   const [title, setTitle] = useState('Q4 Enterprise Product Launch Announcement');
@@ -59,16 +53,6 @@ export default function ContentReviewPage() {
   const [savedReviewId, setSavedReviewId] = useState<string | null>(null);
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>('PENDING');
   const [approvalNotes, setApprovalNotes] = useState('');
-  const [reviewerName, setReviewerName] = useState('Demo Reviewer (Brand Lead)');
-
-  useEffect(() => {
-    setMounted(true);
-    setRules(getStoredRules());
-    const settings = getStoredSettings();
-    if (settings.reviewerIdentity) {
-      setReviewerName(settings.reviewerIdentity);
-    }
-  }, []);
 
   const sampleViolationsText =
     'Announcing Brand Sentry 2.0! We provide a 100% guaranteed zero downtime deployment with tripled ROI for enterprise marketing teams. Competitors are clueless about real brand governance.';
@@ -108,10 +92,7 @@ export default function ContentReviewPage() {
 
     setTimeout(() => {
       // Evaluate against the latest stored Brand Vault rules
-      const currentRules = getStoredRules();
-      setRules(currentRules);
-
-      const result = runContentReview(content, currentRules, channel);
+      const result = runContentReview(content, rules, channel);
       setScanResult(result);
       setIsScanning(false);
 
@@ -221,10 +202,6 @@ export default function ContentReviewPage() {
     setApprovalStatus('PENDING');
     showToast('Reset', 'Form cleared.', 'info');
   };
-
-  if (!mounted) {
-    return <div className="p-8 text-center text-slate-400">Loading Review Engine...</div>;
-  }
 
   const activeRulesCount = rules.filter(r => r.enabled).length;
 
@@ -601,8 +578,19 @@ export default function ContentReviewPage() {
                       size="sm"
                       onClick={() => handleApprovalAction('REVISED')}
                     >
-                      Need Revision
+                      Request Changes
                     </Button>
+                  </div>
+
+                  <div className="space-y-1 pt-1">
+                    <label className="text-[11px] text-slate-400">Governance Notes / Feedback (optional)</label>
+                    <input
+                      type="text"
+                      value={approvalNotes}
+                      onChange={e => setApprovalNotes(e.target.value)}
+                      placeholder="e.g. Tone verified, or changes requested for claims"
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    />
                   </div>
 
                   {scanResult.status === 'FLAGGED' && (

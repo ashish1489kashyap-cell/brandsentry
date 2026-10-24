@@ -1,33 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { MetricsGrid } from '@/components/dashboard/MetricsGrid';
 import { RecentReviews } from '@/components/dashboard/RecentReviews';
 import { QuickActionBanner } from '@/components/dashboard/QuickActionBanner';
 import { ILLUSTRATIVE_METRICS, ILLUSTRATIVE_REVIEWS } from '@/lib/mock-data';
-import { Info, Sparkles, Database, CheckCircle2, ShieldCheck, PlusCircle } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Info, Sparkles, Database, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { StoredReview } from '@/types';
-import { getStoredReviews, calculateRealMetrics } from '@/lib/storage';
+import { useStoredReviews, calculateRealMetrics } from '@/lib/storage';
 
 export default function DashboardPage() {
-  const [mounted, setMounted] = useState(false);
-  const [storedReviews, setStoredReviews] = useState<StoredReview[]>([]);
+  const storedReviews = useStoredReviews();
   // Default to REAL stored records (honest workspace)
   const [showSampleData, setShowSampleData] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setStoredReviews(getStoredReviews());
-
-    const handleStorageUpdate = () => {
-      setStoredReviews(getStoredReviews());
-    };
-
-    window.addEventListener('brandsentry:storage-updated', handleStorageUpdate);
-    return () => window.removeEventListener('brandsentry:storage-updated', handleStorageUpdate);
-  }, []);
 
   const realMetrics = calculateRealMetrics(storedReviews);
 
@@ -35,10 +21,6 @@ export default function DashboardPage() {
   const activeReviews = showSampleData
     ? (ILLUSTRATIVE_REVIEWS as unknown as StoredReview[])
     : storedReviews;
-
-  if (!mounted) {
-    return <div className="p-8 text-center text-slate-400">Loading Governance Dashboard...</div>;
-  }
 
   return (
     <div className="space-y-6">

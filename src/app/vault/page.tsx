@@ -29,6 +29,21 @@ export default function BrandVaultPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [ruleToDelete, setRuleToDelete] = useState<BrandRule | null>(null);
+
+  // Form states
+  const [formName, setFormName] = useState('');
+  const [formCategory, setFormCategory] = useState<RuleCategory>('PROHIBITED_PHRASE');
+  const [formSeverity, setFormSeverity] = useState<Severity>('WARNING');
+  const [formMatchPhrase, setFormMatchPhrase] = useState('');
+  const [formTargetTerm, setFormTargetTerm] = useState('');
+  const [formSuggestedCorrection, setFormSuggestedCorrection] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formEnabled, setFormEnabled] = useState(true);
+
   const categories: { id: string; label: string }[] = [
     { id: 'ALL', label: 'All Rules' },
     { id: 'PROHIBITED_PHRASE', label: 'Prohibited Phrases' },
@@ -99,8 +114,7 @@ export default function BrandVaultPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    const updated = saveRule(ruleData);
-    setRules(updated);
+    saveRule(ruleData);
     setIsModalOpen(false);
 
     showToast(
@@ -111,35 +125,28 @@ export default function BrandVaultPage() {
   };
 
   const handleToggleRule = (id: string) => {
-    const updated = toggleRuleEnabled(id);
-    setRules(updated);
-    const toggled = updated.find(r => r.id === id);
+    toggleRuleEnabled(id);
+    const toggled = rules.find(r => r.id === id);
     showToast(
       'Rule Status Updated',
-      `"${toggled?.name}" is now ${toggled?.enabled ? 'ACTIVE' : 'DISABLED'}.`,
+      `"${toggled?.name || 'Rule'}" status updated.`,
       'info'
     );
   };
 
   const handleDeleteConfirm = () => {
     if (!ruleToDelete) return;
-    const updated = deleteRule(ruleToDelete.id);
-    setRules(updated);
+    deleteRule(ruleToDelete.id);
     showToast('Rule Deleted', `"${ruleToDelete.name}" was removed from Brand Vault.`, 'info');
     setRuleToDelete(null);
   };
 
   const handleResetDefaults = () => {
     if (window.confirm('Reset all brand rules to the initial demo brand profile? User-added rules will be replaced.')) {
-      const reset = resetRulesToDefault();
-      setRules(reset);
+      resetRulesToDefault();
       showToast('Rules Reset', 'Brand Vault restored to standard demo rules.', 'success');
     }
   };
-
-  if (!mounted) {
-    return <div className="p-8 text-center text-slate-400">Loading Brand Vault...</div>;
-  }
 
   const activeCount = rules.filter(r => r.enabled).length;
 
