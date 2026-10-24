@@ -1,0 +1,75 @@
+import type { BrandRule } from '@/types';
+
+/**
+ * Initial Demo Brand Profile Rules.
+ * These provide the default rules out-of-the-box for the Brand Vault.
+ * They are clearly marked with isExample: true and are fully editable and removable by the user.
+ */
+export const INITIAL_DEMO_RULES: BrandRule[] = [
+  {
+    id: 'DEMO-RULE-001',
+    name: 'Unsupported Absolute Claim: "Guaranteed Results"',
+    category: 'APPROVED_CLAIM',
+    description: 'Prohibits unbacked absolute promises like "guaranteed results", "100% guaranteed", or "zero risk" without verified commercial proof.',
+    severity: 'CRITICAL',
+    matchPhrase: 'guaranteed results, 100% guaranteed, zero risk, zero downtime',
+    suggestedCorrection: 'engineered for high reliability',
+    enabled: true,
+    isExample: true,
+    createdAt: '2026-10-24T10:00:00Z',
+    updatedAt: '2026-10-24T10:00:00Z',
+  },
+  {
+    id: 'DEMO-RULE-002',
+    name: 'Official Brand Nomenclature: "BrandSentry"',
+    category: 'REQUIRED_TERMINOLOGY',
+    description: 'Requires standard capitalized BrandSentry nomenclature. Flags common incorrect variations such as "Brand Sentry" or "brand-sentry".',
+    severity: 'WARNING',
+    matchPhrase: 'brand sentry, brand-sentry, brandsentry.io',
+    targetTerm: 'BrandSentry™',
+    suggestedCorrection: 'BrandSentry™',
+    enabled: true,
+    isExample: true,
+    createdAt: '2026-10-24T10:00:00Z',
+    updatedAt: '2026-10-24T10:00:00Z',
+  },
+  {
+    id: 'DEMO-RULE-003',
+    name: 'Prohibited Combative Phrasing: "Competitors are Clueless"',
+    category: 'PROHIBITED_PHRASE',
+    description: 'Flags aggressive or disparaging statements that conflict with consultative brand tone and expose organization to competitor disputes.',
+    severity: 'WARNING',
+    matchPhrase: 'competitors are clueless, obviously inferior, foolish to ignore, amateur solution',
+    suggestedCorrection: 'alternative market options',
+    enabled: true,
+    isExample: true,
+    createdAt: '2026-10-24T10:00:00Z',
+    updatedAt: '2026-10-24T10:00:00Z',
+  },
+  {
+    id: 'DEMO-RULE-004',
+    name: 'Financial & ROI Claim Qualification',
+    category: 'APPROVED_CLAIM',
+    description: 'Flags unverified return claims like "tripled ROI" or "doubled revenue" that lack safe-harbor disclaimers.',
+    severity: 'CRITICAL',
+    matchPhrase: 'tripled roi, doubled revenue, 10x returns, guaranteed return',
+    suggestedCorrection: 'measurable ROI benchmark (see audit report)',
+    enabled: true,
+    isExample: true,
+    createdAt: '2026-10-24T10:00:00Z',
+    updatedAt: '2026-10-24T10:00:00Z',
+  },
+  {
+    id: 'DEMO-RULE-005',
+    name: 'Executive Tone: Avoid Casual Slang in Press Releases',
+    category: 'TONE_VOICE',
+    description: 'Maintains enterprise professionalism by discouraging colloquial hype phrases in external corporate messaging.',
+    severity: 'INFO',
+    matchPhrase: 'no-brainer, game changer, quick hacks, killer feature',
+    suggestedCorrection: 'strategic advancement',
+    enabled: true,
+    isExample: true,
+    createdAt: '2026-10-24T10:00:00Z',
+    updatedAt: '2026-10-24T10:00:00Z',
+  },
+];
